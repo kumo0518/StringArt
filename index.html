@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular String Art Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+        .controls {
+            margin: 20px;
+        }
+        .controls label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Circular String Art Generator</h1>
+    <div class="controls">
+        <label for="points">Number of Points:</label>
+        <input type="number" id="points" value="20" min="3" max="100">
+
+        <label for="direction">Direction:</label>
+        <select id="direction">
+            <option value="clockwise" selected>Clockwise</option>
+            <option value="counterclockwise">Counterclockwise</option>
+        </select>
+
+        <label for="a">Slope (a):</label>
+        <input type="number" id="a" value="1" step="0.1">
+
+        <label for="b">Intercept (b):</label>
+        <input type="number" id="b" value="0" step="0.1">
+
+        <label for="show-numbers">Show Point Numbers:</label>
+        <input type="checkbox" id="show-numbers" checked>
+
+        <label for="progress">Progress:</label>
+        <input type="range" id="progress" min="0" max="100" value="0" oninput="updateSequentialDrawing()">
+
+        <button onclick="drawInstantly()">Draw Instantly</button>
+        <button onclick="startSequentialDrawing()">Sequential Drawing</button>
+    </div>
+    <canvas id="canvas" width="500" height="500"></canvas>
+
+    <script>
+        let allPoints = [];
+        let ctx;
+        let radius, centerX, centerY, angleStep;
+        let isSequentialDrawing = false;
+
+        function initializeCanvas() {
+            const canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            const points = parseInt(document.getElementById('points').value);
+            const direction = document.getElementById('direction').value;
+            radius = Math.min(canvas.width, canvas.height) / 2 - 10;
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+            angleStep = (2 * Math.PI) / points;
+
+            allPoints = [];
+
+            // Calculate points on the circle based on direction
+            for (let i = 0; i < points; i++) {
+                const angle = direction === "clockwise" ? i * angleStep : -i * angleStep;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                allPoints.push({ x, y, index: i });
+            }
+
+            // Draw the circle
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#aaa';
+            ctx.stroke();
+
+            // Optionally draw point numbers
+            if (document.getElementById('show-numbers').checked) {
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                allPoints.forEach((point) => {
+                    ctx.fillText(point.index, point.x + 5, point.y - 5);
+                });
+            }
+        }
+
+        function drawInstantly() {
+            initializeCanvas();
+            const a = parseFloat(document.getElementById('a').value);
+            const b = parseFloat(document.getElementById('b').value);
+
+            for (let i = 0; i < allPoints.length; i++) {
+                const startPoint = allPoints[i];
+                const targetIndex = (Math.round(a * i + b) % allPoints.length + allPoints.length) % allPoints.length;
+                const endPoint = allPoints[targetIndex];
+
+                ctx.beginPath();
+                ctx.moveTo(startPoint.x, startPoint.y);
+                ctx.lineTo(endPoint.x, endPoint.y);
+                ctx.strokeStyle = `rgba(0, 0, 255, 0.5)`;
+                ctx.stroke();
+            }
+        }
+
+        function startSequentialDrawing() {
+            initializeCanvas();
+            isSequentialDrawing = true;
+            document.getElementById('progress').value = 0;
+        }
+
+        function updateSequentialDrawing() {
+            if (!isSequentialDrawing) return;
+
+            const progress = parseInt(document.getElementById('progress').value);
+            const totalSteps = allPoints.length;
+            const stepsToDraw = Math.floor((progress / 100) * totalSteps);
+
+            initializeCanvas();
+            const a = parseFloat(document.getElementById('a').value);
+            const b = parseFloat(document.getElementById('b').value);
+
+            for (let i = 0; i < stepsToDraw; i++) {
+                const startPoint = allPoints[i];
+                const targetIndex = (Math.round(a * i + b) % allPoints.length + allPoints.length) % allPoints.length;
+                const endPoint = allPoints[targetIndex];
+
+                ctx.beginPath();
+                ctx.moveTo(startPoint.x, startPoint.y);
+                ctx.lineTo(endPoint.x, endPoint.y);
+                ctx.strokeStyle = `rgba(0, 0, 255, 0.5)`;
+                ctx.stroke();
+            }
+        }
+
+        initializeCanvas();
+    </script>
+</body>
+</html>
